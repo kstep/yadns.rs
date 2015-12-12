@@ -1,21 +1,32 @@
 
+use super::dto::ErrorReply;
+
+use std::fmt;
+use std::io::Error as IoError;
+use std::error::Error as StdError;
+use std::result::Result as StdResult;
+
+use serde::{de, Deserialize, Deserializer};
+use serde_json::error::Error as JsonError;
+use hyper::Error as HttpError;
+
 #[derive(Debug)]
-enum Error {
+pub enum Error {
     /// HTTP error
     Http(HttpError),
     /// JSON decode error
-    Json(serde_json::error::Error),
+    Json(JsonError),
     /// Yandex API error
-    Api(ErrorReplyDTO),
+    Api(ErrorReply),
     /// IO error
     Io(IoError)
 }
 
-type Result<T> = StdResult<T, Error>;
+pub type Result<T> = StdResult<T, Error>;
 
 impl StdError for Error {
     fn description(&self) -> &str {
-        use Error::*;
+        use self::Error::*;
         match *self {
             Http(ref err) => err.description(),
             Json(ref err) => err.description(),
@@ -25,7 +36,7 @@ impl StdError for Error {
     }
 
     fn cause(&self) -> Option<&StdError> {
-        use Error::*;
+        use self::Error::*;
         Some(match *self {
             Http(ref err) => err,
             Json(ref err) => err,
@@ -37,7 +48,7 @@ impl StdError for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Error::*;
+        use self::Error::*;
         match *self {
             Http(ref err) => err.fmt(f),
             Json(ref err) => err.fmt(f),
@@ -60,8 +71,8 @@ impl From<::serde_json::error::Error> for Error {
         Error::Json(value)
     }
 }
-impl From<ErrorReplyDTO> for Error {
-    fn from(value: ErrorReplyDTO) -> Error {
+impl From<ErrorReply> for Error {
+    fn from(value: ErrorReply) -> Error {
         Error::Api(value)
     }
 }
@@ -71,20 +82,20 @@ impl From<IoError> for Error {
     }
 }
 
-impl StdError for ErrorReplyDTO {
+impl StdError for ErrorReply {
     fn description(&self) -> &str {
         self.error.description()
     }
 }
 
-impl fmt::Display for ErrorReplyDTO {
+impl fmt::Display for ErrorReply {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.description().fmt(f)
     }
 }
 
 #[derive(Debug, Clone)]
-enum ErrorCode {
+pub enum ErrorCode {
     Unknown,
     NoToken,
     NoDomain,
@@ -106,7 +117,7 @@ enum ErrorCode {
 
 impl StdError for ErrorCode {
     fn description(&self) -> &str {
-        use ErrorCode::*;
+        use self::ErrorCode::*;
         match *self {
             Unknown => "unknown error",
             NoToken => "access token missing",
@@ -135,13 +146,13 @@ impl fmt::Display for ErrorCode {
     }
 }
 
-impl serde::Deserialize for ErrorCode {
-    fn deserialize<D: serde::Deserializer>(d: &mut D) -> StdResult<ErrorCode, D::Error> {
+impl Deserialize for ErrorCode {
+    fn deserialize<D: Deserializer>(d: &mut D) -> StdResult<ErrorCode, D::Error> {
         struct ErrorCodeVisitor;
 
-        impl serde::de::Visitor for ErrorCodeVisitor {
+        impl de::Visitor for ErrorCodeVisitor {
             type Value = ErrorCode;
-            fn visit_str<E: serde::de::Error>(&mut self, v: &str) -> StdResult<ErrorCode, E> {
+            fn visit_str<E: de::Error>(&mut self, v: &str) -> StdResult<ErrorCode, E> {
                 use self::ErrorCode::*;
                 match v {
                     "unknown" => Ok(Unknown),
@@ -161,7 +172,7 @@ impl serde::Deserialize for ErrorCode {
                     "occupied" => Ok(Occupied),
                     "domain_limit_reached" => Ok(DomainLimitReached),
                     "no_reply" => Ok(NoReply),
-                    _ => Err(serde::de::Error::unknown_field("invalid error code"))
+                    _ => Err(de::Error::unknown_field("invalid error code"))
                 }
             }
         }

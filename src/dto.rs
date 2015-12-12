@@ -1,3 +1,10 @@
+use super::api::{DnsType, Content, ResultCode, YandexDNS, YaVisitor};
+use super::error::{ErrorCode, Result};
+use super::skiperr::SkipErr;
+
+use std::borrow::{Cow, Borrow};
+
+use hyper::method::Method;
 
 macro_rules! as_str {
     ($key:ident) => { stringify!($key) };
@@ -18,7 +25,7 @@ macro_rules! opt_borrow {
 }
 
 #[derive(Debug, Deserialize)]
-struct RecordDTO {
+pub struct Record {
     record_id: u64,
     #[serde(rename="type")]
     kind: DnsType,
@@ -45,9 +52,9 @@ struct RecordDTO {
     operation: Option<String>,
 }
 
-impl RecordDTO {
-    fn as_add_req(&self) -> AddRequestDTO {
-        AddRequestDTO {
+impl Record {
+    pub fn as_add_req(&self) -> AddRequest {
+        AddRequest {
             domain: (&*self.domain).into(),
             kind: self.kind,
 
@@ -66,8 +73,8 @@ impl RecordDTO {
             ttl: self.ttl,
         }
     }
-    fn as_edit_req(&self) -> EditRequestDTO {
-        EditRequestDTO {
+    pub fn as_edit_req(&self) -> EditRequest {
+        EditRequest {
             domain: (&*self.domain).into(),
             record_id: self.record_id,
 
@@ -89,8 +96,8 @@ impl RecordDTO {
             target: None,
         }
     }
-    fn as_delete_req(&self) -> DeleteRequestDTO {
-        DeleteRequestDTO {
+    pub fn as_delete_req(&self) -> DeleteRequest {
+        DeleteRequest {
             domain: (&*self.domain).into(),
             record_id: self.record_id,
         }
@@ -98,49 +105,49 @@ impl RecordDTO {
 }
 
 #[derive(Debug, Deserialize)]
-struct ListReplyDTO {
-    records: Vec<RecordDTO>,
-    domain: String,
-    success: ResultCode,
+pub struct ListReply {
+    pub records: Vec<Record>,
+    pub domain: String,
+    pub success: ResultCode,
 }
 
 #[derive(Debug, Deserialize)]
-struct EditReplyDTO {
-    domain: String,
-    record_id: u64,
-    record: RecordDTO,
-    success: ResultCode,
+pub struct EditReply {
+    pub domain: String,
+    pub record_id: u64,
+    pub record: Record,
+    pub success: ResultCode,
 }
 
 #[derive(Debug, Deserialize)]
-struct AddReplyDTO {
-    domain: String,
-    record: RecordDTO,
-    success: ResultCode,
+pub struct AddReply {
+    pub domain: String,
+    pub record: Record,
+    pub success: ResultCode,
 }
 
 #[derive(Debug, Deserialize)]
-struct DeleteReplyDTO {
-    domain: String,
-    record_id: u64,
-    success: ResultCode,
+pub struct DeleteReply {
+    pub domain: String,
+    pub record_id: u64,
+    pub success: ResultCode,
 }
 
 #[derive(Debug, Deserialize)]
-struct ErrorReplyDTO {
-    domain: String,
-    record_id: Option<u64>,
-    success: ResultCode,
-    error: ErrorCode,
+pub struct ErrorReply {
+    pub domain: String,
+    pub record_id: Option<u64>,
+    pub success: ResultCode,
+    pub error: ErrorCode,
 }
 
 #[derive(Debug)]
-struct ListRequestDTO<'a> {
+pub struct ListRequest<'a> {
     domain: Cow<'a, str>,
 }
 
 #[derive(Debug)]
-struct AddRequestDTO<'a> {
+pub struct AddRequest<'a> {
     domain: Cow<'a, str>,
     kind: DnsType,
 
@@ -156,7 +163,7 @@ struct AddRequestDTO<'a> {
 }
 
 #[derive(Debug)]
-struct EditRequestDTO<'a> {
+pub struct EditRequest<'a> {
     domain: Cow<'a, str>,
     record_id: u64,
 
@@ -175,22 +182,22 @@ struct EditRequestDTO<'a> {
 }
 
 #[derive(Debug)]
-struct DeleteRequestDTO<'a> {
+pub struct DeleteRequest<'a> {
     domain: Cow<'a, str>,
     record_id: u64,
 }
 
-impl<'a> ListRequestDTO<'a> {
-    fn new<T: Into<Cow<'a, str>>>(domain: T) -> ListRequestDTO<'a> {
-        ListRequestDTO {
+impl<'a> ListRequest<'a> {
+    pub fn new<T: Into<Cow<'a, str>>>(domain: T) -> ListRequest<'a> {
+        ListRequest {
             domain: domain.into(),
         }
     }
 }
 
-impl<'a> AddRequestDTO<'a> {
-    fn new<T: Into<Cow<'a, str>>>(kind: DnsType, domain: T) -> AddRequestDTO<'a> {
-        AddRequestDTO {
+impl<'a> AddRequest<'a> {
+    pub fn new<T: Into<Cow<'a, str>>>(kind: DnsType, domain: T) -> AddRequest<'a> {
+        AddRequest {
             domain: domain.into(),
             kind: kind,
 
@@ -205,31 +212,31 @@ impl<'a> AddRequestDTO<'a> {
         }
     }
 
-    fn subdomain<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
+    pub fn subdomain<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
         self.subdomain = value.into();
         self
     }
 
-    fn content<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
+    pub fn content<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
         self.content = value.into();
         self
     }
 }
 
-impl<'a> EditRequestDTO<'a> {
-    fn subdomain<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
+impl<'a> EditRequest<'a> {
+    pub fn subdomain<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
         self.subdomain = Some(value.into());
         self
     }
 
-    fn content<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
+    pub fn content<T: Into<Cow<'a, str>>>(&mut self, value: T) -> &mut Self {
         self.content = Some(value.into());
         self
     }
 }
 
-impl<'a> YaVisitor for ListRequestDTO<'a> {
-    type Reply = ListReplyDTO;
+impl<'a> YaVisitor for ListRequest<'a> {
+    type Reply = ListReply;
     fn visit(&self, api: &mut YandexDNS) -> Result<Self::Reply> {
         api.call("list", Method::Get, qs! {
             domain => self.domain.borrow(),
@@ -237,8 +244,8 @@ impl<'a> YaVisitor for ListRequestDTO<'a> {
     }
 }
 
-impl<'a> YaVisitor for AddRequestDTO<'a> {
-    type Reply = AddReplyDTO;
+impl<'a> YaVisitor for AddRequest<'a> {
+    type Reply = AddReply;
     fn visit(&self, api: &mut YandexDNS) -> Result<Self::Reply> {
         api.call("add", Method::Post, qs! {
             domain => self.domain.borrow(),
@@ -257,8 +264,8 @@ impl<'a> YaVisitor for AddRequestDTO<'a> {
     }
 }
 
-impl<'a> YaVisitor for EditRequestDTO<'a> {
-    type Reply = EditReplyDTO;
+impl<'a> YaVisitor for EditRequest<'a> {
+    type Reply = EditReply;
     fn visit(&self, api: &mut YandexDNS) -> Result<Self::Reply> {
         let record_id = self.record_id.to_string();
         let refresh = self.refresh.map(|v| v.to_string());
@@ -290,8 +297,8 @@ impl<'a> YaVisitor for EditRequestDTO<'a> {
     }
 }
 
-impl<'a> YaVisitor for DeleteRequestDTO<'a> {
-    type Reply = DeleteReplyDTO;
+impl<'a> YaVisitor for DeleteRequest<'a> {
+    type Reply = DeleteReply;
     fn visit(&self, api: &mut YandexDNS) -> Result<Self::Reply> {
         api.call("delete", Method::Post, qs! {
             domain => self.domain.borrow(),

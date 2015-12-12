@@ -1,6 +1,10 @@
+use std::fmt;
+use std::ops::{Deref, DerefMut};
+use std::result::Result as StdResult;
 
+use serde::{Deserialize, Deserializer};
 
-struct SkipErr<T>(Option<T>);
+pub struct SkipErr<T>(Option<T>);
 
 impl<T: fmt::Debug> fmt::Debug for SkipErr<T> where Option<T>: fmt::Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -14,9 +18,9 @@ impl<T: fmt::Display> fmt::Display for SkipErr<T> where Option<T>: fmt::Display 
     }
 }
 
-impl<T: serde::Deserialize> serde::Deserialize for SkipErr<T> {
-    fn deserialize<D: serde::Deserializer>(de: &mut D) -> StdResult<SkipErr<T>, D::Error> {
-        serde::Deserialize::deserialize(de).map(Some).or_else(|_| Ok(None)).map(SkipErr)
+impl<T: Deserialize> Deserialize for SkipErr<T> {
+    fn deserialize<D: Deserializer>(de: &mut D) -> StdResult<SkipErr<T>, D::Error> {
+        Deserialize::deserialize(de).map(Some).or_else(|_| Ok(None)).map(SkipErr)
     }
 }
 
