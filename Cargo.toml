@@ -1,0 +1,14 @@
+[package]
+name = "yadns"
+description = "Yandex DNS APIv2"
+version = "0.1.0"
+authors = ["Konstantin Stepanov <me@kstep.me>"]
+keywords = ["dns", "yandex", "api"]
+license = "MIT"
+
+[dependencies]
+serde = "*"
+serde_json = "*"
+serde_macros = "*"
+hyper = "*"
+url = "*"
