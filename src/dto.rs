@@ -26,30 +26,30 @@ macro_rules! opt_borrow {
 
 #[derive(Debug, Deserialize)]
 pub struct Record {
-    record_id: u64,
+    pub record_id: u64,
     #[serde(rename="type")]
-    kind: DnsType,
-    domain: String,
-    subdomain: String,
-    fqdn: String,
-    content: Content,
-    ttl: u32,
+    pub kind: DnsType,
+    pub domain: String,
+    pub subdomain: String,
+    pub fqdn: String,
+    pub content: Content,
+    pub ttl: u32,
 
-    priority: SkipErr<u32>,
+    pub priority: SkipErr<u32>,
 
     // SOA
-    refresh: Option<u32>,
-    admin_mail: Option<String>,
-    expire: Option<u32>,
-    minttl: Option<u32>,
-    retry: Option<u32>,
+    pub refresh: Option<u32>,
+    pub admin_mail: Option<String>,
+    pub expire: Option<u32>,
+    pub minttl: Option<u32>,
+    pub retry: Option<u32>,
 
     // SRV
-    weight: Option<u32>,
-    port: Option<u16>,
+    pub weight: Option<u32>,
+    pub port: Option<u16>,
 
     // edit
-    operation: Option<String>,
+    pub operation: Option<String>,
 }
 
 impl Record {

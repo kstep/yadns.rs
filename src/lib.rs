@@ -12,3 +12,6 @@ pub mod dto;
 pub mod error;
 pub mod api;
 
+pub use api::{YandexDNS, DnsType};
+pub use dto::{ListRequest, AddRequest, EditRequest, DeleteRequest};
+pub use dto::{ListReply, AddReply, EditReply, DeleteReply};
