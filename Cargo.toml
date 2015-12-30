@@ -5,10 +5,19 @@ version = "0.1.0"
 authors = ["Konstantin Stepanov <me@kstep.me>"]
 keywords = ["dns", "yandex", "api"]
 license = "MIT"
+build = "build.rs"
+
+[features]
+default = ["serde_codegen", "syntex"]
+nightly = ["serde_macros"]
 
 [dependencies]
 serde = "*"
 serde_json = "*"
-serde_macros = "*"
+serde_macros = { version = "*", optional = true }
 hyper = "*"
 url = "*"
+
+[build-dependencies]
+serde_codegen = { version = "*", optional = true }
+syntex = { version = "*", optional = true }

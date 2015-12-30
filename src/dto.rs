@@ -24,33 +24,11 @@ macro_rules! opt_borrow {
     };
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Record {
-    pub record_id: u64,
-    #[serde(rename="type")]
-    pub kind: DnsType,
-    pub domain: String,
-    pub subdomain: String,
-    pub fqdn: String,
-    pub content: Content,
-    pub ttl: u32,
+#[cfg(feature = "nightly")]
+include!("dto.rs.in");
 
-    pub priority: SkipErr<u32>,
-
-    // SOA
-    pub refresh: Option<u32>,
-    pub admin_mail: Option<String>,
-    pub expire: Option<u32>,
-    pub minttl: Option<u32>,
-    pub retry: Option<u32>,
-
-    // SRV
-    pub weight: Option<u32>,
-    pub port: Option<u16>,
-
-    // edit
-    pub operation: Option<String>,
-}
+#[cfg(not(feature = "nightly"))]
+include!(concat!(env!("OUT_DIR"), "/dto.rs"));
 
 impl Record {
     pub fn as_add_req(&self) -> AddRequest {
@@ -102,89 +80,6 @@ impl Record {
             record_id: self.record_id,
         }
     }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ListReply {
-    pub records: Vec<Record>,
-    pub domain: String,
-    pub success: ResultCode,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct EditReply {
-    pub domain: String,
-    pub record_id: u64,
-    pub record: Record,
-    pub success: ResultCode,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AddReply {
-    pub domain: String,
-    pub record: Record,
-    pub success: ResultCode,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct DeleteReply {
-    pub domain: String,
-    pub record_id: u64,
-    pub success: ResultCode,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ErrorReply {
-    pub domain: String,
-    pub record_id: Option<u64>,
-    pub success: ResultCode,
-    pub error: ErrorCode,
-}
-
-#[derive(Debug)]
-pub struct ListRequest<'a> {
-    domain: Cow<'a, str>,
-}
-
-#[derive(Debug)]
-pub struct AddRequest<'a> {
-    domain: Cow<'a, str>,
-    kind: DnsType,
-
-    admin_mail: Cow<'a, str>, // required for SOA
-    content: Cow<'a, str>, // Ipv4 for A, Ipv6 for AAAA, string for CNAME, MX, NS, TXT
-    priority: u32, // required for SRV and MX, default: 10
-    weight: u32, // required for SRV
-    port: u16, // required for SRV
-    target: Cow<'a, str>, // required for SRV
-
-    subdomain: Cow<'a, str>,
-    ttl: u32, // default: 21600
-}
-
-#[derive(Debug)]
-pub struct EditRequest<'a> {
-    domain: Cow<'a, str>,
-    record_id: u64,
-
-    subdomain: Option<Cow<'a, str>>, // default: "@"
-    ttl: Option<u32>, // default: 21600, 900...21600
-    refresh: Option<u32>, // for SOA, default: 10800, 900...86400
-    retry: Option<u32>, // for SOA, default: 900, 90...3600
-    expire: Option<u32>, // for SOA, default: 900, 90...3600
-    neg_cache: Option<u32>, // for SOA, default: 10800, 90...86400
-    admin_mail: Option<Cow<'a, str>>, // required for SOA
-    content: Option<Cow<'a, str>>, // Ipv4 for A, Ipv6 for AAAA, string for CNAME, MX, NS, TXT
-    priority: Option<u32>, // required for SRV and MX, default: 10
-    port: Option<u16>, // required for SRV
-    weight: Option<u32>, // required for SRV
-    target: Option<Cow<'a, str>>, // required for SRV
-}
-
-#[derive(Debug)]
-pub struct DeleteRequest<'a> {
-    domain: Cow<'a, str>,
-    record_id: u64,
 }
 
 impl<'a> ListRequest<'a> {
