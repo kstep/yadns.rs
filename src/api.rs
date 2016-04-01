@@ -161,7 +161,7 @@ impl Deserialize for DnsType {
             }
         }
 
-        d.visit(DnsTypeVisitor)
+        d.deserialize(DnsTypeVisitor)
     }
 }
 
@@ -186,7 +186,7 @@ impl Deserialize for ResultCode {
             }
         }
 
-        d.visit_str(ResultCodeVisitor)
+        d.deserialize(ResultCodeVisitor)
     }
 }
 

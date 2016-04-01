@@ -177,6 +177,6 @@ impl Deserialize for ErrorCode {
             }
         }
 
-        d.visit_str(ErrorCodeVisitor)
+        d.deserialize(ErrorCodeVisitor)
     }
 }
