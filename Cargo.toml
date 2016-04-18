@@ -6,6 +6,7 @@ keywords = ["dns", "yandex", "api"]
 license = "MIT"
 name = "yadns"
 version = "0.2.1"
+repository = "https://github.com/kstep/yadns.rs"
 
 [build-dependencies]
 
